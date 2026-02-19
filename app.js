@@ -463,6 +463,7 @@ function renderTopKpis(strategy) {
   setTextById("annualReturn", fmtPercent(returnMetric.valuePct, 1));
   setTextById("maxDrawdown", maxDrawdownText);
   const maxDrawdownEl = document.getElementById("maxDrawdown");
+  const maxDrawdownCard = maxDrawdownEl?.closest(".kpi-card");
   if (maxDrawdownEl) {
     const hasDdInfo = Number.isFinite(strategy.maxDrawdownUsd)
       && Number.isFinite(strategy.maxDdDurationDays)
@@ -475,8 +476,10 @@ function renderTopKpis(strategy) {
         `Ended: ${strategy.maxDdEndDate}`,
         `Duration: ${strategy.maxDdDurationDays} day${strategy.maxDdDurationDays === 1 ? "" : "s"}`
       ].join("\n");
+      if (maxDrawdownCard) maxDrawdownCard.title = maxDrawdownEl.title;
     } else {
       maxDrawdownEl.removeAttribute("title");
+      if (maxDrawdownCard) maxDrawdownCard.removeAttribute("title");
     }
   }
   setTextById("numTrades", strategy.trades.toLocaleString("en-US"));
