@@ -32,7 +32,7 @@ body {
 }
 
 .page-shell {
-  width: min(1800px, calc(100% - clamp(16px, 2.8vw, 48px)));
+  width: min(1600px, calc(100% - clamp(24px, 3.8vw, 88px)));
   margin: 22px auto;
 }
 
