@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Polyprofits Performance Dashboard</title>
+    <meta
+      name="description"
+      content="Public-facing performance metrics dashboard for Polyprofits strategies."
+    />
+    <link rel="stylesheet" href="./styles.css?v=20260218-4" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
+    <script src="./app.js?v=20260218-4" defer></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="page-header">
+        <div>
+          <img class="header-logo" src="./assets/polyprofits-logo-white.png" alt="Polyprofits" />
+          <p class="subtitle">Backtested performance from uploaded SPX/NDX dataset plus Monte Carlo simulations.</p>
+          <p class="subtitle" id="datasetWindow">Dataset window: loading...</p>
+        </div>
+        <div class="meta">
+          <span id="generatedAt">Loading...</span>
+        </div>
+      </header>
+
+      <main>
+      <section class="top-stats-source">
+        <label for="topStatsSourceSelect">Top Stats Source</label>
+        <select id="topStatsSourceSelect">
+          <option value="backtest">Backtested on actual Polymarket data</option>
+          <option value="mc_p95">95% Percentile MC Sim (Optimistic)</option>
+          <option value="mc_p50">50% Percentile MC Sim (Middle Ground)</option>
+          <option value="mc_p1">1% Percentile MC Sim (Pessimistic)</option>
+        </select>
+        <label for="assetFilterSelect">Asset Filter</label>
+        <select id="assetFilterSelect">
+          <option value="both">Both</option>
+          <option value="spx">SPX</option>
+          <option value="ndx">NDX</option>
+        </select>
+        <label for="initialCapitalInput">Initial Capital</label>
+        <input id="initialCapitalInput" type="number" min="1" step="100" value="10000" />
+        <label for="betSizeInput">Bet Size</label>
+        <input id="betSizeInput" type="number" min="1" step="1" value="100" />
+        <button id="applySizingBtn" type="button">Apply</button>
+      </section>
+
+      <section class="kpi-strip">
+        <article class="kpi-card">
+          <p class="kpi-label" id="rateOfReturnLabel">Rate of Return</p>
+          <p class="kpi-value positive" id="annualReturn">-</p>
+        </article>
+        <article class="kpi-card">
+          <p class="kpi-label">Max Drawdown</p>
+          <p class="kpi-value negative" id="maxDrawdown">-</p>
+        </article>
+        <article class="kpi-card">
+          <p class="kpi-label">Num Trades</p>
+          <p class="kpi-value" id="numTrades">-</p>
+        </article>
+        <article class="kpi-card">
+          <p class="kpi-label">Win Rate</p>
+          <p class="kpi-value" id="winRate">-</p>
+        </article>
+        <article class="kpi-card">
+          <p class="kpi-label">Win Months</p>
+          <p class="kpi-value positive" id="winMonths">-</p>
+        </article>
+        <article class="kpi-card">
+          <p class="kpi-label">Profit Factor</p>
+          <p class="kpi-value positive" id="profitFactor">-</p>
+        </article>
+      </section>
+
+      <section class="panel">
+        <h2>Monthly Returns</h2>
+        <div class="table-wrap">
+          <table id="monthlyReturnsTable">
+            <thead>
+              <tr>
+                <th>Year</th>
+                <th>Jan</th>
+                <th>Feb</th>
+                <th>Mar</th>
+                <th>Apr</th>
+                <th>May</th>
+                <th>Jun</th>
+                <th>Jul</th>
+                <th>Aug</th>
+                <th>Sep</th>
+                <th>Oct</th>
+                <th>Nov</th>
+                <th>Dec</th>
+                <th>YTD</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section
+        class="panel hypothetical-performance"
+        data-tooltip="Hypothetical performance results have inherent limitations and do not represent actual trading. No representation is being made that any account will or is likely to achieve profits or losses similar to those shown."
+      >
+        <h2>HYPOTHETICAL PERFORMANCE</h2>
+      </section>
+
+      <section class="main-grid">
+        <div class="main-chart-stack">
+          <section class="panel">
+            <h2>Equity Curve</h2>
+            <p class="panel-subtitle" id="activeStrategyLabel">Strategy: -</p>
+            <canvas id="equityChart" aria-label="Backtest equity chart"></canvas>
+          </section>
+        </div>
+        <aside class="panel summary-panel">
+          <h2>Summary Statistics</h2>
+          <dl>
+            <div><dt>Number of Trades</dt><dd id="sumTrades">-</dd></div>
+            <div><dt>Initial Capital</dt><dd id="sumInitial">-</dd></div>
+            <div><dt>Current Equity</dt><dd id="sumCurrent">-</dd></div>
+            <div><dt>Win Rate</dt><dd id="sumWinRate">-</dd></div>
+            <div><dt>Profitable Trades</dt><dd id="sumWins">-</dd></div>
+            <div><dt>Months Profitable</dt><dd id="sumMonths">-</dd></div>
+            <div><dt>Total Net Profit</dt><dd id="sumNetProfit">-</dd></div>
+            <div><dt>Max Drawdown</dt><dd id="sumDrawdown">-</dd></div>
+            <div><dt>Profit Factor</dt><dd id="sumProfitFactor">-</dd></div>
+          </dl>
+        </aside>
+      </section>
+
+      <section class="panel">
+        <h2>Trade Log</h2>
+        <div class="table-wrap">
+          <table id="tradeLogTable">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Market Traded</th>
+                <th>Direction</th>
+                <th>Bet Size</th>
+                <th>Entry Price</th>
+                <th>Result</th>
+                <th>P/L</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="trade-log-pagination">
+          <button id="tradeLogPrev" type="button">Previous</button>
+          <span id="tradeLogPageInfo">Page 1 / 1</span>
+          <button id="tradeLogNext" type="button">Next</button>
+        </div>
+      </section>
+
+      </main>
+
+      <footer class="page-footer">
+        <div class="disclosures-box">
+        <p><strong>Past results are not necessarily indicative of future results.</strong></p>
+        <p>
+          These results are based on simulated or hypothetical performance results that have certain
+          inherent limitations.
+        </p>
+        <p>
+          Unlike the results shown in an actual performance record, these results do not represent actual
+          trading. Because these trades have not actually been executed, these results may have under-or
+          over-compensated for the impact, if any, of certain market factors, such as lack of liquidity.
+        </p>
+        <p>
+          Simulated or hypothetical trading programs in general are also subject to the fact that they are
+          designed with the benefit of hindsight.
+        </p>
+        <p>
+          No representation is made that any account can achieve profits or losses similar to those shown.
+        </p>
+        <p>
+          In addition, hypothetical trading does not involve financial risk, and no hypothetical trading
+          record can completely account for the impact of financial risk in actual trading.
+        </p>
+        <p>
+          For example, the ability to withstand losses or to adhere to a particular trading program in
+          spite of trading losses are material points which can also adversely affect actual trading
+          results.
+        </p>
+        <p>
+          There are numerous other factors related to the markets in general or to the implementation of
+          any specific trading program, which cannot be fully accounted for in the preparation of
+          hypothetical performance results and all of which can adversely affect actual trading results.
+        </p>
+        <p><strong>Material assumptions and methods used when calculating results</strong></p>
+        <p>
+          The following are material assumptions used when calculating any hypothetical monthly results
+          that appear on our website.
+        </p>
+        <p>
+          <strong>Profits are reinvested.</strong> We assume profits (when there are profits) are
+          reinvested in the trading strategy.
+        </p>
+        <p>
+          <strong>Starting investment size.</strong> For any trading strategy on our site, hypothetical
+          results are based on the assumption that you invested the starting amount shown on the strategy's
+          performance chart.
+        </p>
+        <p>
+          In some cases, nominal dollar amounts on the equity chart have been re-scaled downward to make
+          current go-forward trading sizes more manageable. In these cases, it may not have been possible
+          to trade the strategy historically at the equity levels shown on the chart, and a higher minimum
+          capital was required in the past.
+        </p>
+        <p>
+          <strong>"Max Drawdown" Calculation Method.</strong> We calculate the Max Drawdown statistic as
+          follows. Our computer software looks at the equity chart of the system in question and finds the
+          largest percentage amount that the equity chart ever declines from a local "peak" to a
+          subsequent point in time (thus this is formally called "Maximum Peak to Valley Drawdown.").
+          While this is useful information when evaluating trading systems, keep in mind that past
+          performance does not guarantee future results. Future drawdowns may be larger than the historical
+          maximum drawdowns shown here.
+        </p>
+        <p><strong>Trading is risky.</strong></p>
+        <p>
+          There is a substantial risk of loss in futures and forex trading. Online trading of stocks and
+          options is extremely risky. Assume you can lose money. Do not trade with money you cannot afford
+          to lose.
+        </p>
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,2 @@
+strategy,starting_capital,paths,horizon_calendar_days,observed_trade_days,observed_calendar_days,trade_day_probability,median_end_equity,p05_end_equity,p95_end_equity,median_return_pct,p05_return_pct,p95_return_pct,probability_loss_pct,median_max_drawdown_pct,p95_max_drawdown_pct,worst_max_drawdown_pct
+time_add20_1230_1430_fut_gt_cp2,10000.0,10000,365,51,79,0.6455696202531646,24296.594979261194,19320.46415394806,29201.443748027003,142.96594979261195,93.2046415394806,192.01443748027006,0.0,-6.65685300048323,-3.9426660199772616,-28.978532729186146
