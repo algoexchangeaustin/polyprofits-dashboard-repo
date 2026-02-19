@@ -364,7 +364,7 @@ tr:hover td {
 
 #monthlyReturnsTable th:last-child,
 #monthlyReturnsTable td:last-child {
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .positive {
@@ -376,12 +376,12 @@ tr:hover td {
 }
 
 .month-pos {
-  background: rgba(38, 208, 124, 0.22);
+  background: transparent;
   color: #7dffb7;
 }
 
 .month-neg {
-  background: rgba(255, 94, 111, 0.2);
+  background: transparent;
   color: #ff9ba8;
 }
 
