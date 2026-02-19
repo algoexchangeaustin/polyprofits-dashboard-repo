@@ -463,23 +463,30 @@ function renderTopKpis(strategy) {
   setTextById("annualReturn", fmtPercent(returnMetric.valuePct, 1));
   setTextById("maxDrawdown", maxDrawdownText);
   const maxDrawdownEl = document.getElementById("maxDrawdown");
-  const maxDrawdownCard = maxDrawdownEl?.closest(".kpi-card");
+  const maxDrawdownCard = document.getElementById("maxDrawdownCard") || maxDrawdownEl?.closest(".kpi-card");
   if (maxDrawdownEl) {
     const hasDdInfo = Number.isFinite(strategy.maxDrawdownUsd)
       && Number.isFinite(strategy.maxDdDurationDays)
       && strategy.maxDdStartDate
       && strategy.maxDdEndDate;
     if (hasDdInfo) {
-      maxDrawdownEl.title = [
+      const tooltipText = [
         `Amount: ${fmtCurrency(strategy.maxDrawdownUsd)}`,
         `Started: ${strategy.maxDdStartDate}`,
         `Ended: ${strategy.maxDdEndDate}`,
         `Duration: ${strategy.maxDdDurationDays} day${strategy.maxDdDurationDays === 1 ? "" : "s"}`
       ].join("\n");
-      if (maxDrawdownCard) maxDrawdownCard.title = maxDrawdownEl.title;
+      maxDrawdownEl.title = tooltipText;
+      if (maxDrawdownCard) {
+        maxDrawdownCard.title = tooltipText;
+        maxDrawdownCard.setAttribute("data-tooltip", tooltipText);
+      }
     } else {
       maxDrawdownEl.removeAttribute("title");
-      if (maxDrawdownCard) maxDrawdownCard.removeAttribute("title");
+      if (maxDrawdownCard) {
+        maxDrawdownCard.removeAttribute("title");
+        maxDrawdownCard.removeAttribute("data-tooltip");
+      }
     }
   }
   setTextById("numTrades", strategy.trades.toLocaleString("en-US"));
