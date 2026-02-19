@@ -77,6 +77,13 @@ function setTextById(id, value) {
   el.textContent = value;
 }
 
+function dayDiffIso(startIso, endIso) {
+  const start = parseIsoAsUtcDate(startIso);
+  const end = parseIsoAsUtcDate(endIso);
+  if (!start || !end) return NaN;
+  return Math.max(Math.round((end.getTime() - start.getTime()) / 86400000), 0);
+}
+
 function toIsoDateString(date) {
   if (!(date instanceof Date) || !Number.isFinite(date.getTime())) return "";
   const y = date.getUTCFullYear();
@@ -247,6 +254,11 @@ function computeBacktestMetrics(label, rows, pnlColumn, startingEquity = DEFAULT
   let maxEquity = startingEquity;
   let maxDrawdownUsd = 0;
   let maxDrawdownPct = 0;
+  let peakEquityForDd = startingEquity;
+  let peakDateForDd = PERFORMANCE_START_ISO;
+  let maxDdStartDate = "";
+  let maxDdEndDate = "";
+  let maxDdDurationDays = NaN;
   let wins = 0;
   let losses = 0;
   let grossProfit = 0;
@@ -289,10 +301,21 @@ function computeBacktestMetrics(label, rows, pnlColumn, startingEquity = DEFAULT
     monthPnl += pnl;
     runningEquity += pnl;
     maxEquity = Math.max(maxEquity, runningEquity);
+    const rowDateIso = extractIsoDate(row);
+    if (runningEquity >= peakEquityForDd) {
+      peakEquityForDd = runningEquity;
+      peakDateForDd = rowDateIso || peakDateForDd;
+    }
     const drawdownUsd = maxEquity - runningEquity;
     maxDrawdownUsd = Math.max(maxDrawdownUsd, drawdownUsd);
-    const drawdownPctAbs = maxEquity > 0 ? (drawdownUsd / maxEquity) * 100 : 0;
-    maxDrawdownPct = Math.max(maxDrawdownPct, drawdownPctAbs);
+    const drawdownPctAbs = peakEquityForDd > 0 ? (drawdownUsd / peakEquityForDd) * 100 : 0;
+    if (drawdownPctAbs > maxDrawdownPct) {
+      maxDrawdownPct = drawdownPctAbs;
+      maxDrawdownUsd = drawdownUsd;
+      maxDdStartDate = peakDateForDd;
+      maxDdEndDate = rowDateIso;
+      maxDdDurationDays = dayDiffIso(maxDdStartDate, maxDdEndDate);
+    }
     const drawdownPct = -drawdownPctAbs;
 
     if (pnl >= 0) {
@@ -362,6 +385,9 @@ function computeBacktestMetrics(label, rows, pnlColumn, startingEquity = DEFAULT
     winRatePct,
     maxDrawdownUsd,
     maxDrawdownPct,
+    maxDdStartDate,
+    maxDdEndDate,
+    maxDdDurationDays,
     endingEquity,
     cagrPct,
     equity,
@@ -436,6 +462,23 @@ function renderTopKpis(strategy) {
   if (returnLabelEl) returnLabelEl.textContent = returnMetric.label;
   setTextById("annualReturn", fmtPercent(returnMetric.valuePct, 1));
   setTextById("maxDrawdown", maxDrawdownText);
+  const maxDrawdownEl = document.getElementById("maxDrawdown");
+  if (maxDrawdownEl) {
+    const hasDdInfo = Number.isFinite(strategy.maxDrawdownUsd)
+      && Number.isFinite(strategy.maxDdDurationDays)
+      && strategy.maxDdStartDate
+      && strategy.maxDdEndDate;
+    if (hasDdInfo) {
+      maxDrawdownEl.title = [
+        `Amount: ${fmtCurrency(strategy.maxDrawdownUsd)}`,
+        `Started: ${strategy.maxDdStartDate}`,
+        `Ended: ${strategy.maxDdEndDate}`,
+        `Duration: ${strategy.maxDdDurationDays} day${strategy.maxDdDurationDays === 1 ? "" : "s"}`
+      ].join("\n");
+    } else {
+      maxDrawdownEl.removeAttribute("title");
+    }
+  }
   setTextById("numTrades", strategy.trades.toLocaleString("en-US"));
   setTextById("winRate", fmtPercent(strategy.winRatePct, 1));
   setTextById("winMonths", `${profitableMonths}/${totalMonths}`);
@@ -500,6 +543,9 @@ function buildTopStatsFromEquitySeries(points) {
       losses: 0,
       netPnl: 0,
       maxDrawdownUsd: 0,
+      maxDdStartDate: "",
+      maxDdEndDate: "",
+      maxDdDurationDays: NaN,
       endingEquity: NaN,
       cagrPct: NaN,
       maxDrawdownPct: NaN,
@@ -519,14 +565,27 @@ function buildTopStatsFromEquitySeries(points) {
   let peak = startEquity;
   let maxDrawdownUsd = 0;
   let maxDrawdownPct = 0;
+  let peakDate = toIsoDateString(cleanPoints[0].date);
+  let maxDdStartDate = "";
+  let maxDdEndDate = "";
+  let maxDdDurationDays = NaN;
 
   for (let i = 1; i < cleanPoints.length; i += 1) {
     const currentEquity = cleanPoints[i].equity;
-    peak = Math.max(peak, currentEquity);
+    const currentDateIso = toIsoDateString(cleanPoints[i].date);
+    if (currentEquity >= peak) {
+      peak = currentEquity;
+      peakDate = currentDateIso || peakDate;
+    }
     const ddUsd = peak - currentEquity;
-    maxDrawdownUsd = Math.max(maxDrawdownUsd, ddUsd);
     const ddPct = peak > 0 ? (ddUsd / peak) * 100 : 0;
-    maxDrawdownPct = Math.max(maxDrawdownPct, ddPct);
+    if (ddPct > maxDrawdownPct) {
+      maxDrawdownPct = ddPct;
+      maxDrawdownUsd = ddUsd;
+      maxDdStartDate = peakDate;
+      maxDdEndDate = currentDateIso;
+      maxDdDurationDays = dayDiffIso(maxDdStartDate, maxDdEndDate);
+    }
     const pnl = cleanPoints[i].equity - cleanPoints[i - 1].equity;
     if (!Number.isFinite(pnl)) continue;
     if (pnl >= 0) {
@@ -556,6 +615,9 @@ function buildTopStatsFromEquitySeries(points) {
     losses,
     netPnl,
     maxDrawdownUsd,
+    maxDdStartDate,
+    maxDdEndDate,
+    maxDdDurationDays,
     endingEquity,
     cagrPct,
     maxDrawdownPct,
